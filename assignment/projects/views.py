@@ -1,5 +1,6 @@
 from typing import List
 from django.shortcuts import render
+from rest_framework import response
 from .models import Resource, Project, Release
 from rest_framework import views, viewsets
 from .serializers import ResourceSerializer, ProjectSerializer, ReleaseSerializer
@@ -188,6 +189,33 @@ class ResourceViewset(viewsets.ModelViewSet):
 class ProjectViewset(viewsets.ModelViewSet):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
+
+    # The create() method has been overridden to prevent a post request
+    # that creates a project with name that is already present in the database
+
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        already_present = False
+        projects = Project.objects.all()
+        for project in projects:
+            if project.name == data['name']:
+                already_present = True
+        if already_present:
+            return Response({'message': 'Project with this name is already present'},
+            status = status.HTTP_400_BAD_REQUEST)
+        else:
+            return super().create(request, *args, **kwargs)
+
+    # The update method is overridden to prevent any changes to 
+    # the Resource Pool project
+
+    def update(self, request, *args, **kwargs):
+        project_id = kwargs['pk']
+        if Project.objects.get(id = project_id).name == 'Resource Pool':
+            return Response({'message':'Resource Pool cannot be updated'},
+            status = status.HTTP_400_BAD_REQUEST)
+        else:
+            return super().update(request, *args, **kwargs)
 
     # The destroy() method of the Project viewset has been overriden so nobody can
     # delete the 'Resource Pool' project since it is the default project for any resource
