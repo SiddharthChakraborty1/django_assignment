@@ -2,11 +2,14 @@ from collections import defaultdict
 from django.db import models
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 
-# creating custom account manager
+
+# The following function will return the project Resource Pool for default value
 
 def get_default_project():
     default_project = Project.objects.get(name = "Resource Pool")
     return default_project
+
+# creating custom account manager for the resource model
 
 class MyAccountManager(BaseUserManager):
     def create_user(self, name, email, password, experience):
@@ -42,7 +45,7 @@ class MyAccountManager(BaseUserManager):
         user.save(using = self._db)
         return user
 
-# Create your models here.
+# Creating Project model that will hold information of projects present in the company
 
 class Project(models.Model):
     
@@ -53,6 +56,8 @@ class Project(models.Model):
     def __str__(self):
         return self.name
 
+
+# Creating a custom user model 
 
 class Resource(AbstractBaseUser):
     name            =models.CharField(max_length=50)
@@ -80,10 +85,12 @@ class Resource(AbstractBaseUser):
     def has_module_perms(self, app_label):
         return True
 
+# Creating Release model that will hold information of releases in a particular project
+
 class Release(models.Model):
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='releases')
-    release_date = models.DateField()
-    version = models.FloatField()
-    description = models.CharField(max_length=1000)
+    project             = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='releases')
+    release_date        = models.DateField()
+    version             = models.FloatField()
+    description         = models.CharField(max_length=1000)
 
 

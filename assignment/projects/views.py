@@ -16,6 +16,33 @@ class ResourceViewset(viewsets.ModelViewSet):
     queryset = Resource.objects.all()
     serializer_class = ResourceSerializer
 
+    
+
+    # the following create() method can accept either a single json object and create
+    # a single resource or it can accept a json array containing multiple json objects
+    # and create multiple resources
+
+    # the structure of json array for creating multiple resources is as follows
+    #     [
+        #     {   
+        #     "email": "s.chakraborty2@globallogic.com",
+        #     "experience": 1,
+        #     "name": "Siddharth Chakraborty",
+        #     "password": "abc123"
+        #     },
+        #     {   
+        #     "email": "utkarsh@gmail.com",
+        #     "experience": 1,
+        #     "name": "Utkarsh Koshta",
+        #     "password": "def123",
+        #     "project": 3
+        # }
+    # ]
+
+    #if while creating a resource
+    #the project is not specified, then the resource will be associated with a 
+    #default project called 'Resource Pool'
+
     def create(self, request, *args, **kwargs):
         print('printing request data from viewset of resources')
         print(request.data)
@@ -31,6 +58,62 @@ class ResourceViewset(viewsets.ModelViewSet):
             status = status.HTTP_201_CREATED,
             headers= headers
         )
+
+    # overriding the update() method for resource model
+    # this update() method has been overridden to facilitate single as well as bulk allocation
+    # and deallocation of recources to projects
+    
+    # for allocating multiple resources to a project, we will have to send a json array as follows
+    #     [
+        #     {   "id" : 14,
+        #         "project": 3
+        
+        #     },
+        #     {   "id" : 13
+        #         "project": 3
+        #     }
+        #     {   "id" : 15,
+        #         "project": 3
+        #     },
+    # ]
+
+    # if the above json array is received by the update method then the resources with id 13, 14 and 15
+    # will be allocated to the project with id 3
+
+    # if we want to deallocate multiple resources from a project we just have to send a json array containing
+    # id of the resources we want to deallocate from projects as follows
+    #     [
+        #     {   "id" : 14,
+        #     },
+        #     {   "id" : 13
+        #     }
+        #     {   "id" : 15,
+        #     },
+    # ]
+
+    # if the update() method receives this json array, the resources with id 13, 14 and will be deallocated
+    # from the project they were associated with and will be allocated to the default project called 'Resource Pool'
+
+
+    # The update() method can also be used to update other details of single or multiple users
+    # {
+        # "id": 13,
+        # "name": "updated name",
+        # "password": "updated password",
+        # "experience": updated experience,
+        # "is_admin": true,
+        # "is_superuser": true,
+        # "is_staff": true
+    # }
+
+    # the above details of the reource with id 13 will be updated
+    # note: providing id of the resource in the json object is mandatory since
+    # this update() method also handles updating multiple resources and it does not use
+    # the id (pk) sent as part of the url, it uses the id in the json object
+
+    # note: the email of the resource cannot be changed after account creation since it is used
+    # as the username field because the resouce model is a custom user model
+
 
     def update(self, request, *args, **kwargs):
         if isinstance(request.data, list):
@@ -106,6 +189,10 @@ class ProjectViewset(viewsets.ModelViewSet):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
 
+    # The destroy() method of the Project viewset has been overriden so nobody can
+    # delete the 'Resource Pool' project since it is the default project for any resource
+    # that is not yet allocated to a project
+
     def destroy(self, request, *args, **kwargs):
         print(kwargs)
         project_id = kwargs['pk']
@@ -122,6 +209,10 @@ class ProjectViewset(viewsets.ModelViewSet):
 class ReleaseViewset(viewsets.ModelViewSet):
     queryset = Release.objects.all()
     serializer_class = ReleaseSerializer
+
+    # The create() method of the Release viewset has been overridden so nobody can add
+    # a release to the 'Resource Pool' project since it is the default project and hence
+    # does not accept any releases
 
     def create(self, request, *args, **kwargs):
         data = request.data 
@@ -141,6 +232,13 @@ class ReleaseViewset(viewsets.ModelViewSet):
         else:
             return Response(status = status.HTTP_400_BAD_REQUEST)
                     
+
+    # The update() method of the Release viewset has been overriden to prevent people
+    # from updating the version of the release and to prevent associating the release
+    # to a different project
+
+    # This update() method only allows updating the release_date and the description (deliverables)
+    # of the release
 
     def update(self, request, *args, **kwargs):
         release_id = kwargs['pk']

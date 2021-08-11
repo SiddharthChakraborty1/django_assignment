@@ -9,14 +9,13 @@ from rest_framework_bulk import (
 )
 
 
+
+
 class ResourceSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = Resource
         fields = '__all__'
         list_serializer_class = BulkListSerializer
-
-        
-
 
 
 class ReleaseSerializer(serializers.ModelSerializer):
@@ -24,7 +23,12 @@ class ReleaseSerializer(serializers.ModelSerializer):
         model = Release
         fields = '__all__'
 
+
 class ProjectSerializer(serializers.ModelSerializer):
+    
+    # Using nested serializer to present all the releases associated with a particular
+    # project with the project info itself
+
     releases = ReleaseSerializer(read_only = True, many = True)
     class Meta:
         model = Project
