@@ -1,7 +1,9 @@
 from typing import List
 from django.shortcuts import render
+from rest_framework.generics import UpdateAPIView
 from rest_framework import response
 from .models import Resource, Project, Release
+from rest_framework.decorators import api_view
 from rest_framework import views, viewsets
 from .serializers import ResourceSerializer, ProjectSerializer, ReleaseSerializer
 from rest_framework.response import Response
@@ -9,6 +11,9 @@ from rest_framework import status
 from rest_framework_bulk import ListBulkCreateUpdateDestroyAPIView
 
 # Create your views here.
+
+
+
 
 def homeView(request):
     return render(request, 'home.html')
@@ -59,6 +64,7 @@ class ResourceViewset(viewsets.ModelViewSet):
             status = status.HTTP_201_CREATED,
             headers= headers
         )
+
 
     # overriding the update() method for resource model
     # this update() method has been overridden to facilitate single as well as bulk allocation
@@ -290,4 +296,16 @@ class ReleaseViewset(viewsets.ModelViewSet):
                 return Response({'message': 'mandatory field (project) missing'}, status = status.HTTP_400_BAD_REQUEST)
         else:
             return Response({'message': 'Invalid release id'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+def project_release_view(request, **kwargs):
+    project_id = kwargs['project_id']
+    releases = Release.objects.filter(project = Project.objects.get(id = project_id))
+    serializer = ReleaseSerializer(releases, many = True)
+    return Response({"status": "OK",
+    "data": serializer.data}, status = status.HTTP_200_OK)
+
+
+
 

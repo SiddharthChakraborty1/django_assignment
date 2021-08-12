@@ -1,3 +1,4 @@
+import enum
 from django.db.models import fields
 from rest_framework import serializers
 from .models import Resource, Project, Release
@@ -10,12 +11,12 @@ from rest_framework_bulk import (
 
 
 
-
 class ResourceSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = Resource
         fields = '__all__'
-        list_serializer_class = BulkListSerializer
+        read_only_fields = ("id", "email", "date_joined")
+        #list_serializer_class = UpdateListSerializer
 
 
 class ReleaseSerializer(serializers.ModelSerializer):
