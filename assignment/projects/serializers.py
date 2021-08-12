@@ -26,11 +26,6 @@ class ReleaseSerializer(serializers.ModelSerializer):
 
 
 class ProjectSerializer(serializers.ModelSerializer):
-    
-    # Using nested serializer to present all the releases associated with a particular
-    # project with the project info itself
-
-    releases = ReleaseSerializer(read_only = True, many = True)
     class Meta:
         model = Project
-        fields = ['id','name', 'start_date', 'end_date', 'releases']
+        fields = ['id','name', 'start_date', 'end_date']
