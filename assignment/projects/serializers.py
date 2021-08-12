@@ -16,7 +16,7 @@ class ResourceSerializer(serializers.ModelSerializer):
         model = Resource
         fields = '__all__'
         read_only_fields = ("id", "email", "date_joined")
-        #list_serializer_class = UpdateListSerializer
+       
 
 
 class ReleaseSerializer(serializers.ModelSerializer):

@@ -69,130 +69,48 @@ class ResourceViewset(viewsets.ModelViewSet):
         )
 
 
-    # overriding the update() method for resource model
-    # this update() method has been overridden to facilitate single as well as bulk allocation
-    # and deallocation of recources to projects
-    
-    # for allocating multiple resources to a project, we will have to send a json array as follows
-    #     [
-        #     {   "id" : 14,
-        #         "project": 3
-        
-        #     },
-        #     {   "id" : 13
-        #         "project": 3
-        #     }
-        #     {   "id" : 15,
-        #         "project": 3
-        #     },
-    # ]
-
-    # if the above json array is received by the update method then the resources with id 13, 14 and 15
-    # will be allocated to the project with id 3
-
-    # if we want to deallocate multiple resources from a project we just have to send a json array containing
-    # id of the resources we want to deallocate from projects as follows
-    #     [
-        #     {   "id" : 14,
-        #     },
-        #     {   "id" : 13
-        #     }
-        #     {   "id" : 15,
-        #     },
-    # ]
-
-    # if the update() method receives this json array, the resources with id 13, 14 and will be deallocated
-    # from the project they were associated with and will be allocated to the default project called 'Resource Pool'
-
-
-    # The update() method can also be used to update other details of single or multiple users
-    # {
-        # "id": 13,
-        # "name": "updated name",
-        # "password": "updated password",
-        # "experience": updated experience,
-        # "is_admin": true,
-        # "is_superuser": true,
-        # "is_staff": true
-    # }
-
-    # the above details of the reource with id 13 will be updated
-    # note: providing id of the resource in the json object is mandatory since
-    # this update() method also handles updating multiple resources and it does not use
-    # the id (pk) sent as part of the url, it uses the id in the json object
-
-    # note: the email of the resource cannot be changed after account creation since it is used
-    # as the username field because the resouce model is a custom user model
-
+    # The update() method of the resource viewset has been overridden
+    # to prevent updation of email field since it is used for auth purposes
 
     def update(self, request, *args, **kwargs):
-        if isinstance(request.data, list):
-            for data in request.data:
-                if Resource.objects.filter(id = data['id']).exists():
-                    user = Resource.objects.get(id = data['id'])
-                    if 'project' in data.keys():
-                        user.project = Project.objects.get(id = data['project'])
+        resource_id = kwargs['pk']
+        if Resource.objects.filter(id = resource_id).exists():
+            user = Resource.objects.get(id = resource_id)
+            data = request.data
+            if 'project' in request.data.keys():
+                    user.project = Project.objects.get(id = request.data['project'])
 
-                    if 'project' not in data.keys():
-                        user.project = Project.objects.get(name = 'Resource Pool')
-                    
-                    if 'name' in data.keys():
-                        user.name = data['name']
+            if 'project' not in request.data.keys():
+                    user.project = Project.objects.get(name = 'Resource Pool')
 
-                    if 'password' in data.keys():
-                        user.password = data['password']
+            if 'name' in request.data.keys():
+                    user.name = request.data['name']
+
+            if 'password' in request.data.keys():
+                    user.password = request.data['password']
                         
-                    if 'is_admin' in data.keys():
-                        user.is_admin = data['is_admin']
+            if 'is_admin' in request.data.keys():
+                    user.is_admin = request.data['is_admin']
 
-                    if 'is_staff' in data.keys():
-                        user.is_staff = data['is_staff']
-
-                    
-                    if 'is_superuser' in data.keys():
-                        user.is_superuser = data['is_superuser']
-                    
-                    if 'experience' in data.keys():
-                        user.expeirience = data['experience']
-
-                    user.save()
-                else:
-                    return Response(status = status.HTTP_404_NOT_FOUND)
-            
-        else:
-            if Resource.objects.filter(id = request.data['id']).exists():
-                user = Resource.objects.get(id = request.data['id'])
-                if 'project' in request.data.keys():
-                        user.project = Project.objects.get(id = request.data['project'])\
-
-                if 'project' not in request.data.keys():
-                        user.project = Project.objects.get(name = 'Resource Pool')
-
-                if 'name' in request.data.keys():
-                        user.name = request.data['name']
-
-                if 'password' in request.data.keys():
-                        user.password = request.data['password']
-                        
-                if 'is_admin' in request.data.keys():
-                        user.is_admin = request.data['is_admin']
-
-                if 'is_staff' in request.data.keys():
-                        user.is_staff = request.data['is_staff']
+            if 'is_staff' in request.data.keys():
+                    user.is_staff = request.data['is_staff']
 
                     
-                if 'is_superuser' in request.data.keys():
-                        user.is_superuser = request.data['is_superuser']
+            if 'is_superuser' in request.data.keys():
+                    user.is_superuser = request.data['is_superuser']
                     
-                if 'experience' in request.data.keys():
-                        user.expeirience = request.data['experience']
+            if 'experience' in request.data.keys():
+                    user.expeirience = request.data['experience']
                 
 
-                user.save()
-            else:
-                return Response(status = status.HTTP_404_NOT_FOUND)
+            user.save()
+            return Response({"Message": "User details updated successfully!"},
+            status = status.HTTP_200_OK)
+        else:
+            return Response({"Message": "User not found"},
+            status = status.HTTP_404_NOT_FOUND)
 
-        return Response({'msg': 'updated successfully'}, status = status.HTTP_204_NO_CONTENT)
+        
 
 
 class ProjectViewset(viewsets.ModelViewSet):
@@ -309,6 +227,9 @@ class ReleaseViewset(viewsets.ModelViewSet):
             return Response({'message': 'Invalid release id'}, status=status.HTTP_404_NOT_FOUND)
 
 
+# The following api view takes the project id from the url
+# and returns all the releases associated with that project
+
 @api_view(['GET'])
 def project_release_view(request, **kwargs):
     project_id = kwargs['project_id']
@@ -316,6 +237,12 @@ def project_release_view(request, **kwargs):
     serializer = ReleaseSerializer(releases, many = True)
     return Response({"status": "OK",
     "data": serializer.data}, status = status.HTTP_200_OK)
+
+# The following api view takes project id from the url
+# and it takes the id of resources as json array of objects as follows
+# [{"id": 12}, {"id": 13}, {"id":14}]
+# then it will allocate the resources with id 12, 13 and 14 to the project
+# whoes id is sent as a part of the url
 
 @api_view(['POST'])
 def allocate_resources_view(request, **kwargs):
@@ -343,6 +270,12 @@ def allocate_resources_view(request, **kwargs):
         return Response({'Message': 'Project not found'},
         status = status.HTTP_404_NOT_FOUND)
 
+# The following api will take id of the resources that need to be deallocated
+# from their current project and will allocate them to the default project "Resource Pool"
+
+# For example if the json array sent is as follows [{"id": 12}, {"id": 13}, {"id":14}]
+# then the resources with id 12, 13 and 14 will be deallocated from whatever project they
+# are working on now and will be allocated to the default project "Resource Pool"
 
 @api_view(['POST'])
 def deallocate_resource_view(request):
