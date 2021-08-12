@@ -19,7 +19,7 @@ from django.contrib import admin
 from django.urls import path, include
 from projects import views as projectsView
 from rest_framework.routers import DefaultRouter
-from projects.views import ResourceViewset, ProjectViewset, ReleaseViewset, project_release_view
+from projects.views import ResourceViewset, ProjectViewset, ReleaseViewset, project_release_view, allocate_resources_view, deallocate_resource_view
 from rest_framework_bulk.routes import BulkRouter
 
 
@@ -33,6 +33,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', projectsView.homeView),
     path('api/', include(router.urls)),
-    path('api/project/release/<project_id>/', project_release_view, name='project release view')
+    path('api/project/releases/<project_id>/', project_release_view, name='project release view'),
+    path('api/allocateResources/<project_id>/', allocate_resources_view, name='allocate resources to project'),
+    path('api/deallocateResources/', deallocate_resource_view, name='deallocate resources from project')
 
 ]

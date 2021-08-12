@@ -1,4 +1,6 @@
+import datetime
 from typing import List
+from django.db.models.fields import DateTimeCheckMixin
 from django.shortcuts import render
 from rest_framework.generics import UpdateAPIView
 from rest_framework import response
@@ -9,6 +11,7 @@ from .serializers import ResourceSerializer, ProjectSerializer, ReleaseSerialize
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_bulk import ListBulkCreateUpdateDestroyAPIView
+from datetime import date, datetime
 
 # Create your views here.
 
@@ -252,14 +255,22 @@ class ReleaseViewset(viewsets.ModelViewSet):
         data = request.data 
         if 'project' and 'release_date' and 'version' and 'description' in data.keys():
             if Project.objects.filter(id = data['project']).exists():
-                if Project.objects.get(id = data['project']).name != 'Resource Pool':
-                    release = Release.objects.create(project = Project.objects.get(id = data['project']),
-                    release_date = data['release_date'], version = data['version'],
-                    description = data['description'])
-                    release.save()
-                    return Response(status = status.HTTP_201_CREATED)
+                sent_date = datetime.strptime(data['release_date'], '%Y-%m-%d')
+                today = datetime.now()
+                timeData = sent_date - today
+                print(sent_date)
+                if timeData.days >= 1:
+                    if Project.objects.get(id = data['project']).name != 'Resource Pool':
+                        release = Release.objects.create(project = Project.objects.get(id = data['project']),
+                        release_date = data['release_date'], version = data['version'],
+                        description = data['description'])
+                        release.save()
+                        return Response(status = status.HTTP_201_CREATED)
+                    else:
+                        return Response({'message': 'Resource Pool does not accept releases'},
+                        status = status.HTTP_400_BAD_REQUEST)
                 else:
-                    return Response({'message': 'Resource Pool does not accept releases'},
+                    return Response({'Message': 'Invalid future release date'},
                     status = status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({'message':'Project does not exist'}, status = status.HTTP_404_NOT_FOUND)
@@ -306,6 +317,47 @@ def project_release_view(request, **kwargs):
     return Response({"status": "OK",
     "data": serializer.data}, status = status.HTTP_200_OK)
 
+@api_view(['POST'])
+def allocate_resources_view(request, **kwargs):
+    project_id = kwargs['project_id']
+    data = request.data
+    print(project_id)
+    print(data)
+    
+    if Project.objects.filter(id = project_id).exists():
+        if Project.objects.get(id = project_id).name != 'Resource Pool':
+            project = Project.objects.get(id = project_id)
+            for user in data:
+                if Resource.objects.filter(id = user['id']).exists():
+                    resource = Resource.objects.filter(id = user['id'] )
+                    resource.update(project = project)
+                else:
+                    return Response({'message': 'Resource not found'},
+                    status = status.HTTP_404_NOT_FOUND)
+            return Response({'Message':'All Resources have been allocated to the project'},
+            status = status.HTTP_200_OK)
+        else:
+            return Response({'Message': 'Cannot explicitely allocate resources to Resource Pool'},
+            status = status.HTTP_400_BAD_REQUEST)
+    else:
+        return Response({'Message': 'Project not found'},
+        status = status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+def deallocate_resource_view(request):
+    default_project = Project.objects.get(name='Resource Pool')
+    data = request.data
+    for user in data:
+        if Resource.objects.filter(id = user['id']).exists():
+            resource = Resource.objects.filter(id = user['id'] )
+            resource.update(project = default_project)
+        else:
+            return Response({'message': 'Resource not found'},
+            status = status.HTTP_404_NOT_FOUND)
+    return Response({'Message':'All Resources have been deallocated from the project'},
+    status = status.HTTP_200_OK)
+    
 
 
 
