@@ -1,5 +1,5 @@
 import datetime
-from typing import List
+from typing import KeysView, List
 from django.db.models.fields import DateTimeCheckMixin
 from django.shortcuts import render
 from rest_framework.generics import UpdateAPIView
@@ -171,7 +171,7 @@ class ReleaseViewset(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         data = request.data 
-        if 'project' and 'release_date' and 'version' and 'description' in data.keys():
+        if 'project' in data.keys() and 'release_date' in data.keys() and 'version' in data.keys() and 'description' in data.keys():
             if Project.objects.filter(id = data['project']).exists():
                 sent_date = datetime.strptime(data['release_date'], '%Y-%m-%d')
                 today = datetime.now()
@@ -206,23 +206,19 @@ class ReleaseViewset(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         release_id = kwargs['pk']
         if Release.objects.filter(id = release_id).exists():
-            if 'project' in request.data.keys():
-                if Project.objects.filter(id = request.data['project']).exists():
-                    if Project.objects.get(id = request.data['project']).name != 'Resource Pool':
-                        release = Release.objects.filter(id = release_id)
-                        if 'release_date' in request.data.keys():
-                            release.update(release_date = request.data['release_date'])
-                        if 'description' in request.data.keys():
-                            release.update(description = request.data['description'])
-                            return Response({'message': 'updated successfully'},
-                            status = status.HTTP_200_OK)
-                    else:
-                        return Response({'message':'Resource Pool does not contain any releases'},
-                        status = status.HTTP_400_BAD_REQUEST)
-                else:
-                    return Response({'message':'Project not found'}, status = status.HTTP_404_NOT_FOUND)
+            print(request.data.keys())
+            if 'description' in request.data.keys() or 'release_date' in request.data.keys():
+                release = Release.objects.filter(id = release_id)
+                if 'release_date' in request.data.keys():
+                    release.update(release_date = request.data['release_date'])
+                if 'description' in request.data.keys():
+                    release.update(description = request.data['description'])
+                return Response({'message': 'updated successfully'},
+                status = status.HTTP_200_OK)
             else:
-                return Response({'message': 'mandatory field (project) missing'}, status = status.HTTP_400_BAD_REQUEST)
+                return Response({'Message': 'Only description and release_date can be updated'},
+                status = status.HTTP_400_BAD_REQUEST)
+                    
         else:
             return Response({'message': 'Invalid release id'}, status=status.HTTP_404_NOT_FOUND)
 
