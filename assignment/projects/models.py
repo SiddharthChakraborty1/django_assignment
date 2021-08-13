@@ -1,12 +1,18 @@
 from collections import defaultdict
 from django.db import models
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
+from datetime import date
 
 
 # The following function will return the project Resource Pool for default value
 
 def get_default_project():
-    default_project = Project.objects.get(name = "Resource Pool")
+    if Project.objects.filter(name = 'Resource Pool').exists():
+        default_project = Project.objects.get(name = "Resource Pool")
+    else:
+        
+        default_project = Project.objects.create(name = 'Resource Pool', start_date = '2021-08-13', end_date = '2022-08-13' )
+        default_project.save()
     return default_project
 
 # creating custom account manager for the resource model
