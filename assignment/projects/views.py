@@ -85,38 +85,7 @@ class ResourceViewset(viewsets.ModelViewSet):
                 status = status.HTTP_400_BAD_REQUEST)
             else:
                 return super().update(request, *args, **kwargs)
-                
             
-            data = request.data
-            if 'project' in request.data.keys():
-                    user.project = Project.objects.get(id = request.data['project'])
-
-            if 'project' not in request.data.keys():
-                    user.project = Project.objects.get(name = 'Resource Pool')
-
-            if 'name' in request.data.keys():
-                    user.name = request.data['name']
-
-            if 'password' in request.data.keys():
-                    user.password = request.data['password']
-                        
-            if 'is_admin' in request.data.keys():
-                    user.is_admin = request.data['is_admin']
-
-            if 'is_staff' in request.data.keys():
-                    user.is_staff = request.data['is_staff']
-
-                    
-            if 'is_superuser' in request.data.keys():
-                    user.is_superuser = request.data['is_superuser']
-                    
-            if 'experience' in request.data.keys():
-                    user.expeirience = request.data['experience']
-                
-
-            user.save()
-            return Response({"Message": "User details updated successfully!"},
-            status = status.HTTP_200_OK)
         else:
             return Response({"Message": "User not found"},
             status = status.HTTP_404_NOT_FOUND)
