@@ -78,7 +78,8 @@ class ResourceAPITestCase(APITestCase):
 
     def test_updateUser(self):
         user_id = self.user.id 
-        user_dict = dict(name='updated name')
+        user_dict = dict(name='updated name', email = self.user.email,
+        password = self.user.password, experience = self.user.experience, project = self.default_project.id)
         response = self.client.put(f'/api/user/{user_id}/', user_dict)
         response = self.client.get(f'/api/user/{user_id}/')
         self.assertEqual(response.data['name'], 'updated name')
@@ -104,7 +105,7 @@ class ReleaseAPITestCase(APITestCase):
 
     def test_createRelease(self):
         release_dict = dict(description = 'dummy description',
-        release_date = '2021-8-19', version = 0.1, project = self.project.id)
+        release_date = '2022-8-19', version = 0.1, project = self.project.id)
         response = self.client.post('/api/release/', release_dict)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 

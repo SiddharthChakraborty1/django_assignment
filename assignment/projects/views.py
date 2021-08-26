@@ -53,11 +53,10 @@ class ResourceViewset(viewsets.ModelViewSet):
     #default project called 'Resource Pool'
 
     def create(self, request, *args, **kwargs):
-        print('printing request data from viewset of resources')
-        print(request.data)
+       
         data = request.data
         many = isinstance(data, list)
-        print(data, many)
+       
         serializer = self.get_serializer(data=data, many = many)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -71,11 +70,23 @@ class ResourceViewset(viewsets.ModelViewSet):
 
     # The update() method of the resource viewset has been overridden
     # to prevent updation of email field since it is used for auth purposes
+    
+    
 
     def update(self, request, *args, **kwargs):
         resource_id = kwargs['pk']
-        if Resource.objects.filter(id = resource_id).exists():
+        try:
             user = Resource.objects.get(id = resource_id)
+        except Resource.DoesNotExist:
+            user = None
+        if user is not None:
+            if request.data.get('email') != user.email:
+                return Response({"Message": "Cannot update email after account creation"},
+                status = status.HTTP_400_BAD_REQUEST)
+            else:
+                return super().update(request, *args, **kwargs)
+                
+            
             data = request.data
             if 'project' in request.data.keys():
                     user.project = Project.objects.get(id = request.data['project'])
@@ -121,17 +132,12 @@ class ProjectViewset(viewsets.ModelViewSet):
     # that creates a project with name that is already present in the database
 
     def create(self, request, *args, **kwargs):
-        data = request.data
-        already_present = False
-        projects = Project.objects.all()
-        for project in projects:
-            if project.name == data['name']:
-                already_present = True
-        if already_present:
-            return Response({'message': 'Project with this name is already present'},
-            status = status.HTTP_400_BAD_REQUEST)
+        project, created = Project.objects.get_or_create(name = request.data['name'], defaults={'start_date': request.data['start_date'],
+        'end_date': request.data['end_date']})
+        if created:
+            return Response({'Message': 'Created successfully'}, status = status.HTTP_201_CREATED)
         else:
-            return super().create(request, *args, **kwargs)
+            return Response({'Message': f'Project with the given name already exists'}, status = status.HTTP_400_BAD_REQUEST)
 
     # The update method is overridden to prevent any changes to 
     # the Resource Pool project
@@ -149,10 +155,14 @@ class ProjectViewset(viewsets.ModelViewSet):
     # that is not yet allocated to a project
 
     def destroy(self, request, *args, **kwargs):
-        print(kwargs)
+       
         project_id = kwargs['pk']
-        if Project.objects.filter(id = project_id).exists():
-            if Project.objects.get(id = project_id).name != 'Resource Pool':
+        try:
+            project = Project.objects.get(id = project_id)
+        except Project.DoesNotExist:
+            project = None
+        if project is not None:
+            if project.name != 'Resource Pool':
                 project = Project.objects.get(id = project_id)
                 project.delete()
                 return Response({'message':'Project deleted successfully!'}, status = status.HTTP_200_OK)
@@ -171,12 +181,16 @@ class ReleaseViewset(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         data = request.data 
-        if 'project' in data.keys() and 'release_date' in data.keys() and 'version' in data.keys() and 'description' in data.keys():
-            if Project.objects.filter(id = data['project']).exists():
+        if 'project' in data.keys() and 'release_date' in data.keys() and 'version' in data.keys()   and 'description' in data.keys():
+            try:
+                project = Project.objects.get(id = data['project'])
+            except Project.DoesNotExist:
+                project = None
+            if project is not None:
                 sent_date = datetime.strptime(data['release_date'], '%Y-%m-%d')
                 today = datetime.now()
                 timeData = sent_date - today
-                print(sent_date)
+               
                 if timeData.days >= 1:
                     if Project.objects.get(id = data['project']).name != 'Resource Pool':
                         release = Release.objects.create(project = Project.objects.get(id = data['project']),
@@ -205,8 +219,11 @@ class ReleaseViewset(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         release_id = kwargs['pk']
-        if Release.objects.filter(id = release_id).exists():
-            print(request.data.keys())
+        try:
+            release = Release.objects.get(id = release_id)
+        except Release.DoesNotExist:
+            release = None
+        if release is not None:
             if 'description' in request.data.keys() or 'release_date' in request.data.keys():
                 release = Release.objects.filter(id = release_id)
                 if 'release_date' in request.data.keys():
@@ -244,11 +261,14 @@ def project_release_view(request, **kwargs):
 def allocate_resources_view(request, **kwargs):
     project_id = kwargs['project_id']
     data = request.data
-    print(project_id)
-    print(data)
+    try:
+        project = Project.objects.get(id = project_id)
+    except:
+        project = None
+
     
-    if Project.objects.filter(id = project_id).exists():
-        if Project.objects.get(id = project_id).name != 'Resource Pool':
+    if project is not None:
+        if project.name != 'Resource Pool':
             project = Project.objects.get(id = project_id)
             for user in data:
                 if Resource.objects.filter(id = user['id']).exists():
